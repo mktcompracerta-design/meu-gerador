@@ -1,33 +1,27 @@
-async function enviarFormulario(formulario) {
-  const formData = new FormData(formulario);
+async function gerar() {
+  const prompt = document.getElementById("prompt").value;
+  const saida = document.getElementById("saida");
+
+  saida.textContent = "Processando...";
 
   try {
-    const resposta = await fetch("/api/gerar", {
+    const resp = await fetch("/api/gerar", {
       method: "POST",
-      body: formData
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
     });
 
-    const json = await resposta.json();
+    // Garante que só tenta ler JSON se o retorno for JSON
+    const texto = await resp.text();
 
-    if (json.error) {
-      alert(json.error);
-      return;
+    try {
+      const data = JSON.parse(texto);
+      saida.textContent = data.resposta || data.error;
+    } catch (jsonErr) {
+      saida.textContent = "Erro: resposta não é JSON: " + texto;
     }
 
-    document.getElementById("resultado").innerHTML =
-      `<img src="data:image/png;base64,${json.image}" width="400">`;
-
   } catch (erro) {
-    alert("Erro ao enviar: " + erro.message);
+    saida.textContent = "Erro de rede: " + erro;
   }
 }
-
-document.getElementById("formPrompt").onsubmit = function (e) {
-  e.preventDefault();
-  enviarFormulario(e.target);
-};
-
-document.getElementById("formReferencia").onsubmit = function (e) {
-  e.preventDefault();
-  enviarFormulario(e.target);
-};
