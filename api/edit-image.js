@@ -1,42 +1,67 @@
 export default async function handler(req, res) {
     // Configurar CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
+    // Handle OPTIONS request
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
+    // Only allow POST requests
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método não permitido' });
+        return res.status(405).json({ 
+            success: false,
+            error: 'Método não permitido. Use POST.' 
+        });
     }
 
-    console.log('✅ API edit-image chamada');
+    console.log('✅ API edit-image chamada via', req.method);
 
     try {
-        // Obter os dados do FormData
+        // Check content type
+        const contentType = req.headers['content-type'] || '';
+        if (!contentType.includes('multipart/form-data') && !contentType.includes('application/x-www-form-urlencoded')) {
+            console.log('❌ Content-Type inválido:', contentType);
+            return res.status(400).json({
+                success: false,
+                error: 'Content-Type deve ser multipart/form-data'
+            });
+        }
+
+        // Parse FormData
         const formData = await req.formData();
         const myPhoto = formData.get('myPhoto');
         const instruction = formData.get('instruction');
 
-        console.log('✅ Dados recebidos:', {
+        console.log('✅ Dados recebidos na API:', {
             temFoto: !!myPhoto,
             temInstrucao: !!instruction,
-            instrucao: instruction?.substring(0, 50) + '...'
+            nomeFoto: myPhoto?.name,
+            tipoFoto: myPhoto?.type,
+            tamanhoFoto: myPhoto?.size,
+            instrucao: instruction?.substring(0, 100)
         });
 
+        // Validate inputs
         if (!myPhoto) {
-            return res.status(400).json({ error: 'Foto é obrigatória', success: false });
+            return res.status(400).json({ 
+                success: false,
+                error: 'Foto é obrigatória' 
+            });
         }
 
         if (!instruction) {
-            return res.status(400).json({ error: 'Instrução é obrigatória', success: false });
+            return res.status(400).json({ 
+                success: false,
+                error: 'Instrução é obrigatória' 
+            });
         }
 
-        // Processar com Gemini (versão simulada primeiro)
-        const result = await processWithGemini(myPhoto, instruction);
+        // Process with simulation (Gemini integration would go here)
+        const result = await processWithSimulation(myPhoto, instruction);
         
         console.log('✅ Retornando resultado para frontend');
         return res.status(200).json(result);
@@ -44,23 +69,39 @@ export default async function handler(req, res) {
     } catch (error) {
         console.error('❌ Erro na API:', error);
         return res.status(500).json({ 
-            error: 'Erro interno: ' + error.message,
-            success: false
+            success: false,
+            error: 'Erro interno do servidor: ' + error.message
         });
     }
 }
 
-async function processWithGemini(photoFile, instruction) {
-    console.log('✅ Processando com Gemini...');
+async function processWithSimulation(photoFile, instruction) {
+    console.log('🎭 Processando com simulação...');
     
     try {
-        // SIMULAÇÃO: Retornar a imagem original como "editada" para teste
+        // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Convert image to base64 for response
         const arrayBuffer = await photoFile.arrayBuffer();
         const base64Image = Buffer.from(arrayBuffer).toString('base64');
         
-        // Simular processamento
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+        return {
+            success: true,
+            image: `data:${photoFile.type || 'image/jpeg'};base64,${base64Image}`,
+            message: `Simulação: "${instruction}" - A integração com Gemini estará disponível em breve!`,
+            debug: {
+                instruction: instruction,
+                fileSize: photoFile.size,
+                fileType: photoFile.type
+            }
+        };
+
+    } catch (error) {
+        console.error('❌ Erro na simulação:', error);
+        throw new Error('Falha na simulação: ' + error.message);
+    }
+}        
         return {
             success: true,
             image: `data:image/jpeg;base64,${base64Image}`,
