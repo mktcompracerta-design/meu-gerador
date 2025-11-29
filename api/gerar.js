@@ -8,15 +8,15 @@ export default async function handler(req, res) {
       model: "gemini-1.5-flash",
     });
 
-    const prompt = "descreva a imagem que você quer gerar";
-
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent("diga oi");
     const response = await result.response;
-    const text = response.text();
 
-    res.status(200).json({ resposta: text });
+    res.status(200).json({
+      text: response.text()
+    });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.toString() });
   }
 }
