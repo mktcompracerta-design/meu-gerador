@@ -16,12 +16,6 @@ export default async function handler(req, res) {
     console.log('✅ API edit-image chamada');
 
     try {
-        // Verificar se é FormData
-        const contentType = req.headers['content-type'];
-        if (!contentType || !contentType.includes('multipart/form-data')) {
-            return res.status(400).json({ error: 'Content-Type deve ser multipart/form-data' });
-        }
-
         // Obter os dados do FormData
         const formData = await req.formData();
         const myPhoto = formData.get('myPhoto');
@@ -34,7 +28,50 @@ export default async function handler(req, res) {
         });
 
         if (!myPhoto) {
-            return res.status(400).json({ error: 'Foto é obrigatória' });
+            return res.status(400).json({ error: 'Foto é obrigatória', success: false });
+        }
+
+        if (!instruction) {
+            return res.status(400).json({ error: 'Instrução é obrigatória', success: false });
+        }
+
+        // Processar com Gemini (versão simulada primeiro)
+        const result = await processWithGemini(myPhoto, instruction);
+        
+        console.log('✅ Retornando resultado para frontend');
+        return res.status(200).json(result);
+
+    } catch (error) {
+        console.error('❌ Erro na API:', error);
+        return res.status(500).json({ 
+            error: 'Erro interno: ' + error.message,
+            success: false
+        });
+    }
+}
+
+async function processWithGemini(photoFile, instruction) {
+    console.log('✅ Processando com Gemini...');
+    
+    try {
+        // SIMULAÇÃO: Retornar a imagem original como "editada" para teste
+        const arrayBuffer = await photoFile.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
+        
+        // Simular processamento
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        return {
+            success: true,
+            image: `data:image/jpeg;base64,${base64Image}`,
+            message: "Edição simulada - funcionalidade em desenvolvimento"
+        };
+
+    } catch (error) {
+        console.error('❌ Erro no processWithGemini:', error);
+        throw error;
+    }
+}            return res.status(400).json({ error: 'Foto é obrigatória' });
         }
 
         if (!instruction) {
