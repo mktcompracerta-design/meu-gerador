@@ -26,7 +26,7 @@ export default async function handler(req) {
     }
 
     // Conectar Google
-    const genAI = new GoogleGenerativeAI(process.env.AIzaSyAkOq2E8ihzT4edp5zmsVbT3DAdh68coho);
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const autoPrompt = referenciaBase64
