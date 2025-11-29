@@ -1,191 +1,74 @@
-class PhotoMagicApp {
-    constructor() {
-        this.photoInput = document.getElementById('photoInput');
-        this.selectPhotoBtn = document.getElementById('selectPhotoBtn');
-        this.uploadArea = document.getElementById('uploadArea');
-        this.fileName = document.getElementById('fileName');
-        this.instructionInput = document.getElementById('instructionInput');
-        this.editPhotoBtn = document.getElementById('editPhotoBtn');
-        this.imagePreview = document.getElementById('imagePreview');
-        this.loading = document.getElementById('loading');
-        this.resultActions = document.getElementById('resultActions');
-        this.downloadBtn = document.getElementById('downloadBtn');
-        this.newEditBtn = document.getElementById('newEditBtn');
-        
-        this.currentImage = null;
-        this.currentFile = null;
-        this.init();
+export default async function handler(req, res) {
+    // Configurar CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    init() {
-        // Event listeners
-        this.selectPhotoBtn.addEventListener('click', () => this.photoInput.click());
-        this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
-        this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
-        this.photoInput.addEventListener('change', (e) => this.handleFileSelect(e));
-        this.editPhotoBtn.addEventListener('click', () => this.editPhoto());
-        this.downloadBtn.addEventListener('click', () => this.downloadImage());
-        this.newEditBtn.addEventListener('click', () => this.resetEditor());
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Método não permitido' });
+    }
+
+    console.log('✅ API edit-image chamada');
+
+    try {
+        // Obter os dados do FormData
+        const formData = await req.formData();
+        const myPhoto = formData.get('myPhoto');
+        const instruction = formData.get('instruction');
+
+        console.log('✅ Dados recebidos:', {
+            temFoto: !!myPhoto,
+            temInstrucao: !!instruction,
+            instrucao: instruction?.substring(0, 50) + '...'
+        });
+
+        if (!myPhoto) {
+            return res.status(400).json({ error: 'Foto é obrigatória', success: false });
+        }
+
+        if (!instruction) {
+            return res.status(400).json({ error: 'Instrução é obrigatória', success: false });
+        }
+
+        // Processar com Gemini (versão simulada primeiro)
+        const result = await processWithGemini(myPhoto, instruction);
         
-        // Exemplos de uso
-        document.querySelectorAll('.example-item').forEach(item => {
-            item.addEventListener('click', () => {
-                this.instructionInput.value = item.getAttribute('data-instruction');
-                this.instructionInput.focus();
-            });
+        console.log('✅ Retornando resultado para frontend');
+        return res.status(200).json(result);
+
+    } catch (error) {
+        console.error('❌ Erro na API:', error);
+        return res.status(500).json({ 
+            error: 'Erro interno: ' + error.message,
+            success: false
         });
     }
+}
 
-    handleDragOver(e) {
-        e.preventDefault();
-        this.uploadArea.style.borderColor = 'var(--primary)';
-        this.uploadArea.style.background = '#f0f4ff';
-    }
-
-    handleDrop(e) {
-        e.preventDefault();
-        this.uploadArea.style.borderColor = '#cbd5e1';
-        this.uploadArea.style.background = '#f8fafc';
+async function processWithGemini(photoFile, instruction) {
+    console.log('✅ Processando com Gemini...');
+    
+    try {
+        // SIMULAÇÃO: Retornar a imagem original como "editada" para teste
+        const arrayBuffer = await photoFile.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
         
-        if (e.dataTransfer.files.length) {
-            this.processFile(e.dataTransfer.files[0]);
-        }
-    }
-
-    handleFileSelect(e) {
-        if (e.target.files.length) {
-            this.processFile(e.target.files[0]);
-        }
-    }
-
-    processFile(file) {
-        if (!file.type.match('image.*')) {
-            alert('Por favor, selecione apenas arquivos de imagem.');
-            return;
-        }
-
-        this.currentFile = file;
-        this.fileName.textContent = file.name;
+        // Simular processamento
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.currentImage = e.target.result;
-            this.imagePreview.innerHTML = `<img src="${this.currentImage}" alt="Preview">`;
+        return {
+            success: true,
+            image: `data:image/jpeg;base64,${base64Image}`,
+            message: "Edição simulada - funcionalidade em desenvolvimento"
         };
-        reader.readAsDataURL(file);
-    }
 
-    async editPhoto() {
-        if (!this.currentFile) {
-            alert('Por favor, selecione uma foto primeiro.');
-            return;
-        }
-
-        const instruction = this.instructionInput.value.trim();
-        if (!instruction) {
-            alert('Por favor, digite as instruções de edição.');
-            return;
-        }
-
-        this.setLoading(true);
-
-        try {
-            console.log('✅ Iniciando envio para API...');
-            
-            const formData = new FormData();
-            formData.append('myPhoto', this.currentFile);
-            formData.append('instruction', instruction);
-
-            // Fazer a requisição com timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
-
-            const apiResponse = await fetch('/api/edit-image', {
-                method: 'POST',
-                body: formData,
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            console.log('✅ Resposta recebida, status:', apiResponse.status);
-
-            if (!apiResponse.ok) {
-                const errorText = await apiResponse.text();
-                console.error('❌ Erro na resposta:', errorText);
-                throw new Error(`Erro ${apiResponse.status}: ${apiResponse.statusText}`);
-            }
-
-            // Verificar se a resposta é JSON válido
-            const responseText = await apiResponse.text();
-            console.log('✅ Resposta texto:', responseText.substring(0, 200) + '...');
-
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error('❌ Erro ao parsear JSON:', parseError);
-                throw new Error('Resposta inválida da API');
-            }
-
-            if (!result.success) {
-                throw new Error(result.error || 'Erro desconhecido na API');
-            }
-
-            // Exibir resultado
-            console.log('✅ Exibindo imagem resultante');
-            this.imagePreview.innerHTML = `<img src="${result.image}" alt="Imagem Editada">`;
-            this.currentImage = result.image;
-            this.showResult();
-            
-        } catch (error) {
-            console.error('❌ Erro detalhado:', error);
-            
-            if (error.name === 'AbortError') {
-                alert('A requisição demorou muito tempo. Tente novamente.');
-            } else {
-                alert('Erro ao editar imagem: ' + error.message);
-            }
-        } finally {
-            this.setLoading(false);
-        }
-    }
-
-    setLoading(loading) {
-        if (loading) {
-            this.loading.style.display = 'block';
-            this.editPhotoBtn.disabled = true;
-            this.editPhotoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-        } else {
-            this.loading.style.display = 'none';
-            this.editPhotoBtn.disabled = false;
-            this.editPhotoBtn.innerHTML = '<i class="fas fa-magic"></i> Editar Minha Foto';
-        }
-    }
-
-    showResult() {
-        this.resultActions.style.display = 'flex';
-    }
-
-    downloadImage() {
-        if (!this.currentImage) return;
-        
-        const link = document.createElement('a');
-        link.href = this.currentImage;
-        link.download = 'minha-foto-editada.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    resetEditor() {
-        this.instructionInput.value = '';
-        this.resultActions.style.display = 'none';
-        this.imagePreview.innerHTML = `
-            <div class="placeholder-text">
-                <i class="fas fa-image"></i>
-                <p>Sua imagem editada aparecerá aqui</p>
-            </div>
-        `;
+    } catch (error) {
+        console.error('❌ Erro no processWithGemini:', error);
+        throw error;
     }
 }
