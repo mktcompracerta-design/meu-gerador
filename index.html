@@ -1,68 +1,19 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Imagens com Face Swap</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>🎨 Meu Gerador de Imagens Pessoal</h1>
+<!-- Adicionar esta seção no HTML -->
+<div class="mode-section">
+    <h2>3. Editar Minha Foto (Gemini)</h2>
+    
+    <div class="upload-section">
+        <div class="upload-box">
+            <h3>Sua Foto</h3>
+            <input type="file" id="editPhoto" accept="image/*">
+            <div id="editPhotoPreview"></div>
+        </div>
         
-        <!-- Modo: Foto + Referência -->
-        <div class="mode-section">
-            <h2>1. Usar Minha Foto + Foto de Referência</h2>
-            
-            <div class="upload-section">
-                <div class="upload-box">
-                    <h3>Sua Foto</h3>
-                    <input type="file" id="myPhoto" accept="image/*">
-                    <div id="myPhotoPreview"></div>
-                </div>
-                
-                <div class="upload-box">
-                    <h3>Foto de Referência (estilo/roupa)</h3>
-                    <input type="file" id="referencePhoto" accept="image/*">
-                    <div id="referencePhotoPreview"></div>
-                </div>
-            </div>
-            
-            <button id="generateFromPhotosBtn">Gerar Minha Foto no Estilo</button>
-        </div>
-
-        <!-- Modo: Foto + Prompt -->
-        <div class="mode-section">
-            <h2>2. Usar Minha Foto + Prompt</h2>
-            
-            <div class="upload-section">
-                <div class="upload-box">
-                    <h3>Sua Foto</h3>
-                    <input type="file" id="myPhotoPrompt" accept="image/*">
-                    <div id="myPhotoPromptPreview"></div>
-                </div>
-                
-                <div class="prompt-box">
-                    <h3>Descrição do Cenário/Roupa</h3>
-                    <textarea id="promptInput" placeholder="Ex: vestindo um terno elegante em Paris, à noite, com a Torre Eiffel ao fundo..." rows="3"></textarea>
-                </div>
-            </div>
-            
-            <button id="generateFromPromptBtn">Gerar com Prompt</button>
-        </div>
-
-        <!-- Loading e Resultado -->
-        <div class="loading" id="loading" style="display: none;">
-            Gerando sua imagem... ⏳
-        </div>
-
-        <div class="result-section" id="resultSection" style="display: none;">
-            <h3>Resultado:</h3>
-            <div id="imageResult"></div>
-            <button id="downloadBtn">Download</button>
+        <div class="instruction-box">
+            <h3>Instruções de Edição</h3>
+            <textarea id="instructionInput" placeholder="Ex: Troque a camiseta por um terno azul, coloque um fundo de escritório, mantenha meu rosto igual" rows="3"></textarea>
         </div>
     </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+    
+    <button id="editPhotoBtn">Editar Minha Foto</button>
+</div>
