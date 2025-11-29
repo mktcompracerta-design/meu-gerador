@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gerador AI Simples</title>
+</head>
+<body>
+  <h1>Gerar com Prompt + Foto</h1>
+  <textarea id="prompt"></textarea><br><br>
+  <input type="file" id="foto1"><br><br>
+  <button onclick="gerarPrompt()">Gerar</button>
+  <div id="saida1"></div>
+
+  <hr>
+
+  <h1>Gerar com Referência + Foto</h1>
+  <input type="file" id="referencia"><br><br>
+  <input type="file" id="foto2"><br><br>
+  <button onclick="gerarRef()">Gerar</button>
+  <div id="saida2"></div>
+
+  <script>
+    async function gerarPrompt() {
+      const prompt = document.getElementById("prompt").value;
+      const foto = document.getElementById("foto1").files[0];
+
+      const fd = new FormData();
+      fd.append("prompt", prompt);
+      fd.append("foto", foto);
+
+      document.getElementById("saida1").innerHTML = "Gerando...";
+
+      const res = await fetch("/api/gerar", { method: "POST", body: fd });
+      const json = await res.json();
+
+      document.getElementById("saida1").innerHTML =
+        `<img style="max-width:400px" src="data:image/png;base64,${json.image}">`;
+    }
+
+    async function gerarRef() {
+      const foto = document.getElementById("foto2").files[0];
+      const referencia = document.getElementById("referencia").files[0];
+
+      const fd = new FormData();
+      fd.append("foto", foto);
+      fd.append("referencia", referencia);
+
+      document.getElementById("saida2").innerHTML = "Gerando...";
+
+      const res = await fetch("/api/gerar", { method: "POST", body: fd });
+      const json = await res.json();
+
+      document.getElementById("saida2").innerHTML =
+        `<img style="max-width:400px" src="data:image/png;base64,${json.image}">`;
+    }
+  </script>
+</body>
+</html>
