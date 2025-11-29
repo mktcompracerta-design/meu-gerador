@@ -21,26 +21,26 @@ export default async function handler(req, res) {
       const foto = files.foto ? files.foto[0] : null;
       const referencia = files.referencia ? files.referencia[0] : null;
 
-      if (!foto && !prompt && !referencia) {
-        return res.status(400).json({ error: "Envie foto, referência ou prompt." });
+      if (!foto && !prompt) {
+        return res.status(400).json({ error: "Envie ao menos foto ou prompt." });
       }
 
-      // MODELO CORRETO PARA GERAR IMAGENS
+      // MODELO CORRETO PARA GERAR IMAGEM
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.0-pro-vision"   // <---- MODELO QUE FUNCIONA
       });
 
       const inputs = [];
 
-      // FOTO DA PESSOA
+      // FOTO
       if (foto) {
         const bytes = fs.readFileSync(foto.filepath);
         inputs.push({
           inlineData: {
             data: bytes.toString("base64"),
-            mimeType: foto.mimetype,
-          },
+            mimeType: foto.mimetype
+          }
         });
       }
 
@@ -50,32 +50,34 @@ export default async function handler(req, res) {
         inputs.push({
           inlineData: {
             data: bytes.toString("base64"),
-            mimeType: referencia.mimetype,
-          },
+            mimeType: referencia.mimetype
+          }
         });
       }
 
       // PROMPT
-      if (prompt) inputs.push(prompt);
+      if (prompt) {
+        inputs.push(prompt);
+      }
 
-      // GERAR A IMAGEM
+      // GERANDO SAÍDA
       const result = await model.generateContent(inputs);
       const response = await result.response;
 
-      // PEGAR IMAGEM GERADA
-      const image =
-        response.candidates?.[0]?.content?.parts?.find(
-          (p) => p.inlineData && p.inlineData.data
-        )?.inlineData.data;
+      // PEGANDO IMAGEM
+      const part = response.candidates?.[0]?.content?.parts?.find(
+        (p) => p.inlineData?.data
+      );
 
-      if (!image) {
+      if (!part) {
         return res.status(500).json({ error: "Não foi possível gerar imagem" });
       }
 
-      return res.status(200).json({ image });
+      return res.status(200).json({ image: part.inlineData.data });
+
     } catch (e) {
-      console.error("ERRO INTERNO:", e);
-      return res.status(500).json({ error: "Erro interno no servidor" });
+      console.error("Erro interno:", e);
+      return res.status(500).json({ error: "Erro interno" });
     }
   });
 }
