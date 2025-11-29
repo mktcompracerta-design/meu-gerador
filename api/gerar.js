@@ -1,33 +1,42 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-export const config = {
-  runtime: "edge",
-};
-
-export default async function handler(req) {
+module.exports = async (req, res) => {
   try {
-    const form = await req.formData();
-    const prompt = form.get("prompt") || "Gere uma imagem realista.";
-    const foto = form.get("foto");
-    const referencia = form.get("referencia");
-
-    if (!foto) {
-      return new Response(JSON.stringify({ error: "Envie uma foto." }), { status: 400 });
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Método não permitido" });
     }
 
-    // Converte imagens para base64
-    const fotoArray = await foto.arrayBuffer();
-    const fotoBase64 = Buffer.from(fotoArray).toString("base64");
+    const form = await req.body;
+    const chunks = [];
 
+    req.on("data", (chunk) => chunks.push(chunk));
+    await new Promise((resolve) => req.on("end", resolve));
+
+    const buffer = Buffer.concat(chunks);
+    const boundary = req.headers["content-type"].split("boundary=")[1];
+
+    const formData = require("parse-multipart").Parse(buffer, boundary);
+
+    let prompt = "Gere uma imagem realista.";
+    let fotoBase64 = null;
     let referenciaBase64 = null;
-    if (referencia) {
-      const refArray = await referencia.arrayBuffer();
-      referenciaBase64 = Buffer.from(refArray).toString("base64");
+
+    formData.forEach((item) => {
+      if (item.name === "prompt") prompt = item.data.toString();
+      if (item.name === "foto")
+        fotoBase64 = item.data.toString("base64");
+      if (item.name === "referencia")
+        referenciaBase64 = item.data.toString("base64");
+    });
+
+    if (!fotoBase64) {
+      return res.status(400).json({ error: "Envie uma foto." });
     }
 
-    // Conectar Google
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash"
+    });
 
     const autoPrompt = referenciaBase64
       ? "Recrie a imagem de referência usando a foto da pessoa."
@@ -46,11 +55,9 @@ export default async function handler(req) {
 
     const base64 = result.images[0].data.replace(/^data:image\/png;base64,/, "");
 
-    return new Response(JSON.stringify({ image: base64 }), {
-      headers: { "Content-Type": "application/json" }
-    });
+    return res.json({ image: base64 });
 
-  } catch (error) {
-    return new Response(JSON.stringify({ error: String(error) }), { status: 500 });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
   }
-}
+};
