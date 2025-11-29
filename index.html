@@ -1,58 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <title>Gerador AI Simples</title>
+<meta charset="UTF-8">
+<title>Gerador de Imagens IA</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
-<body>
-  <h1>Gerar com Prompt + Foto</h1>
-  <textarea id="prompt"></textarea><br><br>
-  <input type="file" id="foto1"><br><br>
-  <button onclick="gerarPrompt()">Gerar</button>
-  <div id="saida1"></div>
 
-  <hr>
+<body class="bg-light">
 
-  <h1>Gerar com Referência + Foto</h1>
-  <input type="file" id="referencia"><br><br>
-  <input type="file" id="foto2"><br><br>
-  <button onclick="gerarRef()">Gerar</button>
-  <div id="saida2"></div>
+<div class="container py-4">
 
-  <script>
-    async function gerarPrompt() {
-      const prompt = document.getElementById("prompt").value;
-      const foto = document.getElementById("foto1").files[0];
+    <h1 class="text-center mb-4">Gerador de Imagens com IA</h1>
 
-      const fd = new FormData();
-      fd.append("prompt", prompt);
-      fd.append("foto", foto);
+    <!-- BLOCO 1 - Prompt + Foto -->
+    <div class="card p-4 mb-5 shadow">
+        <h3>Gerar com Prompt + Foto</h3>
 
-      document.getElementById("saida1").innerHTML = "Gerando...";
+        <label>Prompt:</label>
+        <textarea id="prompt" class="form-control mb-3" rows="2" placeholder="ex: coloque gorro do papai noel"></textarea>
 
-      const res = await fetch("/api/gerar", { method: "POST", body: fd });
-      const json = await res.json();
+        <label>Foto da Pessoa:</label>
+        <input type="file" id="foto1" accept="image/*" class="form-control mb-3">
 
-      document.getElementById("saida1").innerHTML =
-        `<img style="max-width:400px" src="data:image/png;base64,${json.image}">`;
+        <button onclick="gerarPrompt()" class="btn btn-primary w-100">Gerar</button>
+
+        <div class="text-center mt-4">
+            <img id="resultado1" class="img-fluid rounded shadow d-none" />
+        </div>
+    </div>
+
+    <!-- BLOCO 2 - Referência + Foto -->
+    <div class="card p-4 shadow">
+        <h3>Gerar com Referência + Foto</h3>
+
+        <label>Imagem de Referência:</label>
+        <input type="file" id="ref" accept="image/*" class="form-control mb-3">
+
+        <label>Foto da Pessoa:</label>
+        <input type="file" id="foto2" accept="image/*" class="form-control mb-3">
+
+        <button onclick="gerarReferencia()" class="btn btn-success w-100">Gerar</button>
+
+        <div class="text-center mt-4">
+            <img id="resultado2" class="img-fluid rounded shadow d-none" />
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function enviar(formData) {
+    const res = await fetch("/api/gerar", {
+        method: "POST",
+        body: formData
+    });
+
+    const json = await res.json();
+
+    if (json.error) {
+        alert(json.error);
+        return null;
     }
 
-    async function gerarRef() {
-      const foto = document.getElementById("foto2").files[0];
-      const referencia = document.getElementById("referencia").files[0];
+    return "data:image/png;base64," + json.image;
+}
 
-      const fd = new FormData();
-      fd.append("foto", foto);
-      fd.append("referencia", referencia);
+async function gerarPrompt() {
+    const fd = new FormData();
+    fd.append("prompt", document.getElementById("prompt").value);
+    fd.append("foto", document.getElementById("foto1").files[0]);
 
-      document.getElementById("saida2").innerHTML = "Gerando...";
+    const img = await enviar(fd);
 
-      const res = await fetch("/api/gerar", { method: "POST", body: fd });
-      const json = await res.json();
-
-      document.getElementById("saida2").innerHTML =
-        `<img style="max-width:400px" src="data:image/png;base64,${json.image}">`;
+    if (img) {
+        const el = document.getElementById("resultado1");
+        el.src = img;
+        el.classList.remove("d-none");
     }
-  </script>
+}
+
+async function gerarReferencia() {
+    const fd = new FormData();
+    fd.append("referencia", document.getElementById("ref").files[0]);
+    fd.append("foto", document.getElementById("foto2").files[0]);
+
+    const img = await enviar(fd);
+
+    if (img) {
+        const el = document.getElementById("resultado2");
+        el.src = img;
+        el.classList.remove("d-none");
+    }
+}
+</script>
+
 </body>
 </html>
