@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PhotoMagic AI - Editor de Fotos com IA</title>
+    <title>PhotoMagic AI - Editor de Fotos com Gemini</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -61,6 +61,706 @@
             padding: 15px;
             border-radius: 50%;
         }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .upload-section {
+            padding: 40px;
+            background: var(--light);
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .preview-section {
+            padding: 40px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: var(--dark);
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: #f8fafc;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #f0f4ff;
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .upload-area p {
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary), #eab308);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .instruction-box {
+            margin-top: 30px;
+        }
+
+        .instruction-box label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            transition: border 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .image-preview {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #e5e7eb;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            background: #f8fafc;
+            min-height: 300px;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 10px;
+        }
+
+        .placeholder-text {
+            color: var(--gray);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .placeholder-text i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+            color: #cbd5e1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .result-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .examples {
+            margin-top: 30px;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .examples h4 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .example-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .example-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #e5e7eb;
+        }
+
+        .example-item:hover {
+            border-color: var(--primary);
+            background: #f0f4ff;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: var(--light);
+            color: var(--gray);
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: var(--error);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: var(--success);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .api-status {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .api-status.connected {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #065f46;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-section {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .example-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <h1>PhotoMagic AI</h1>
+                    <p class="subtitle">Edite suas fotos com o poder do Google Gemini</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="section-title">
+                    <i class="fas fa-upload"></i>
+                    <h2>Envie sua Foto</h2>
+                </div>
+
+                <div class="api-status" id="apiStatus">
+                    <i class="fas fa-sync fa-spin"></i> Verificando conexão com a API...
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Arraste e solte sua foto aqui</h3>
+                    <p>ou clique para selecionar</p>
+                    <input type="file" id="photoInput" accept="image/*" hidden>
+                    <button class="btn" id="selectPhotoBtn">
+                        <i class="fas fa-folder-open"></i> Selecionar Foto
+                    </button>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+
+                <div class="instruction-box">
+                    <label for="instructionInput">
+                        <i class="fas fa-edit"></i> Instruções de Edição
+                    </label>
+                    <textarea id="instructionInput" placeholder="Descreva exatamente como quer editar sua foto. Ex: 'Troque minha camiseta por um terno azul', 'Coloque um fundo de praia', 'Altere a cor do cabelo para loiro'"></textarea>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <button class="btn" id="editPhotoBtn" style="margin-top: 20px; width: 100%;">
+                    <i class="fas fa-magic"></i> Editar com Gemini AI
+                </button>
+
+                <div class="examples">
+                    <h4><i class="fas fa-lightbulb"></i> Exemplos que funcionam</h4>
+                    <div class="example-list">
+                        <div class="example-item" data-instruction="Descreva esta imagem em detalhes">📝 Descrever Imagem</div>
+                        <div class="example-item" data-instruction="Quais cores predominam nesta foto?">🎨 Analisar Cores</div>
+                        <div class="example-item" data-instruction="O que esta pessoa está vestindo?">👕 Detalhes da Roupa</div>
+                        <div class="example-item" data-instruction="Descreva a expressão facial">😊 Expressão Facial</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <div class="section-title">
+                    <i class="fas fa-eye"></i>
+                    <h2>Resultado do Gemini</h2>
+                </div>
+
+                <div class="image-preview" id="imagePreview">
+                    <div class="placeholder-text">
+                        <i class="fas fa-image"></i>
+                        <p>O resultado da análise aparecerá aqui</p>
+                        <p style="font-size: 0.8rem; margin-top: 10px; color: #9ca3af;">
+                            O Gemini analisará sua imagem e retornará uma descrição detalhada
+                        </p>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Processando com Google Gemini...</p>
+                    <p class="subtitle">Analisando imagem e gerando descrição</p>
+                </div>
+
+                <div class="result-actions" id="resultActions" style="display: none;">
+                    <button class="btn" id="copyBtn">
+                        <i class="fas fa-copy"></i> Copiar Texto
+                    </button>
+                    <button class="btn btn-secondary" id="newEditBtn">
+                        <i class="fas fa-redo"></i> Nova Análise
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by Google Gemini AI • PhotoMagic AI © 2024</p>
+        </footer>
+    </div>
+
+    <script>
+        class PhotoMagicApp {
+            constructor() {
+                this.photoInput = document.getElementById('photoInput');
+                this.selectPhotoBtn = document.getElementById('selectPhotoBtn');
+                this.uploadArea = document.getElementById('uploadArea');
+                this.fileName = document.getElementById('fileName');
+                this.instructionInput = document.getElementById('instructionInput');
+                this.editPhotoBtn = document.getElementById('editPhotoBtn');
+                this.imagePreview = document.getElementById('imagePreview');
+                this.loading = document.getElementById('loading');
+                this.resultActions = document.getElementById('resultActions');
+                this.copyBtn = document.getElementById('copyBtn');
+                this.newEditBtn = document.getElementById('newEditBtn');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.successMessage = document.getElementById('successMessage');
+                this.apiStatus = document.getElementById('apiStatus');
+                
+                this.currentImage = null;
+                this.currentFile = null;
+                this.geminiResult = null;
+                this.init();
+            }
+
+            init() {
+                // Event listeners
+                this.selectPhotoBtn.addEventListener('click', () => this.photoInput.click());
+                this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+                this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
+                this.photoInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                this.editPhotoBtn.addEventListener('click', () => this.editPhoto());
+                this.copyBtn.addEventListener('click', () => this.copyText());
+                this.newEditBtn.addEventListener('click', () => this.resetEditor());
+                
+                // Exemplos de uso
+                document.querySelectorAll('.example-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        this.instructionInput.value = item.getAttribute('data-instruction');
+                        this.instructionInput.focus();
+                    });
+                });
+
+                // Verificar status da API
+                this.checkAPIStatus();
+                
+                console.log('✅ PhotoMagic App inicializado - Modo Gemini Real');
+            }
+
+            async checkAPIStatus() {
+                try {
+                    const response = await fetch('/api/check-status');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.apiStatus.innerHTML = '<i class="fas fa-check-circle"></i> API Gemini conectada e funcionando!';
+                        this.apiStatus.classList.add('connected');
+                    } else {
+                        this.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API em modo de teste';
+                    }
+                } catch (error) {
+                    this.apiStatus.innerHTML = '<i class="fas fa-times-circle"></i> Erro ao conectar com a API';
+                    console.error('❌ Erro ao verificar API:', error);
+                }
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                this.uploadArea.style.borderColor = 'var(--primary)';
+                this.uploadArea.style.background = '#f0f4ff';
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                this.uploadArea.style.borderColor = '#cbd5e1';
+                this.uploadArea.style.background = '#f8fafc';
+                
+                if (e.dataTransfer.files.length) {
+                    this.processFile(e.dataTransfer.files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                if (e.target.files.length) {
+                    this.processFile(e.target.files[0]);
+                }
+            }
+
+            processFile(file) {
+                if (!file.type.match('image.*')) {
+                    this.showError('Por favor, selecione apenas arquivos de imagem.');
+                    return;
+                }
+
+                // Verificar tamanho do arquivo (máximo 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showError('A imagem deve ter menos de 10MB.');
+                    return;
+                }
+
+                this.currentFile = file;
+                this.fileName.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                this.hideError();
+                this.hideSuccess();
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.currentImage = e.target.result;
+                    this.imagePreview.innerHTML = `
+                        <div style="text-align: center;">
+                            <img src="${this.currentImage}" alt="Preview" style="max-width: 100%; max-height: 250px; border-radius: 10px;">
+                            <p style="margin-top: 15px; color: var(--gray);">Imagem carregada para análise</p>
+                        </div>
+                    `;
+                };
+                reader.onerror = () => {
+                    this.showError('Erro ao carregar a imagem.');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            async editPhoto() {
+                if (!this.currentFile) {
+                    this.showError('Por favor, selecione uma foto primeiro.');
+                    return;
+                }
+
+                const instruction = this.instructionInput.value.trim();
+                if (!instruction) {
+                    this.showError('Por favor, digite as instruções de análise.');
+                    return;
+                }
+
+                this.setLoading(true);
+                this.hideError();
+                this.hideSuccess();
+
+                try {
+                    console.log('🚀 Enviando para API Gemini...');
+                    
+                    const formData = new FormData();
+                    formData.append('image', this.currentFile);
+                    formData.append('instruction', instruction);
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos
+
+                    const response = await fetch('/api/analyze-image', {
+                        method: 'POST',
+                        body: formData,
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    console.log('📨 Resposta da API:', response.status);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('❌ Erro na resposta:', errorText);
+                        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (!result.success) {
+                        throw new Error(result.error || 'Erro desconhecido na API');
+                    }
+
+                    // Exibir resultado do Gemini
+                    this.displayGeminiResult(result);
+                    
+                } catch (error) {
+                    console.error('❌ Erro detalhado:', error);
+                    
+                    if (error.name === 'AbortError') {
+                        this.showError('A requisição demorou muito tempo. Tente com uma imagem menor.');
+                    } else {
+                        this.showError('Erro ao processar imagem: ' + error.message);
+                    }
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            displayGeminiResult(result) {
+                console.log('✅ Resultado do Gemini:', result);
+                this.geminiResult = result.text;
+
+                this.imagePreview.innerHTML = `
+                    <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
+                        <div style="background: var(--light); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">
+                                <i class="fas fa-robot"></i> Resposta do Gemini
+                            </h4>
+                            <p style="color: var(--dark); line-height: 1.6; white-space: pre-wrap;">${result.text}</p>
+                        </div>
+                        <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; border-left: 4px solid var(--primary);">
+                            <p style="color: #0369a1; font-size: 0.9rem; margin: 0;">
+                                <strong>Instrução enviada:</strong> "${this.instructionInput.value}"
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                this.showResult();
+                this.showSuccess('Análise concluída com sucesso pelo Gemini!');
+            }
+
+            setLoading(loading) {
+                if (loading) {
+                    this.loading.style.display = 'block';
+                    this.imagePreview.style.display = 'none';
+                    this.editPhotoBtn.disabled = true;
+                    this.editPhotoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+                } else {
+                    this.loading.style.display = 'none';
+                    this.imagePreview.style.display = 'flex';
+                    this.editPhotoBtn.disabled = false;
+                    this.editPhotoBtn.innerHTML = '<i class="fas fa-magic"></i> Editar com Gemini AI';
+                }
+            }
+
+            showResult() {
+                this.resultActions.style.display = 'flex';
+            }
+
+            copyText() {
+                if (!this.geminiResult) return;
+                
+                navigator.clipboard.writeText(this.geminiResult).then(() => {
+                    this.showSuccess('Texto copiado para a área de transferência!');
+                }).catch(err => {
+                    this.showError('Erro ao copiar texto: ' + err);
+                });
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                this.successMessage.style.display = 'none';
+            }
+
+            showSuccess(message) {
+                this.successMessage.textContent = message;
+                this.successMessage.style.display = 'block';
+                this.errorMessage.style.display = 'none';
+            }
+
+            hideError() {
+                this.errorMessage.style.display = 'none';
+            }
+
+            hideSuccess() {
+                this.successMessage.style.display = 'none';
+            }
+
+            resetEditor() {
+                this.instructionInput.value = '';
+                this.resultActions.style.display = 'none';
+                this.hideError();
+                this.hideSuccess();
+                this.geminiResult = null;
+                
+                if (this.currentImage) {
+                    this.imagePreview.innerHTML = `
+                        <div style="text-align: center;">
+                            <img src="${this.currentImage}" alt="Preview" style="max-width: 100%; max-height: 250px; border-radius: 10px;">
+                            <p style="margin-top: 15px; color: var(--gray);">Imagem carregada para análise</p>
+                        </div>
+                    `;
+                } else {
+                    this.imagePreview.innerHTML = `
+                        <div class="placeholder-text">
+                            <i class="fas fa-image"></i>
+                            <p>O resultado da análise aparecerá aqui</p>
+                            <p style="font-size: 0.8rem; margin-top: 10px; color: #9ca3af;">
+                                O Gemini analisará sua imagem e retornará uma descrição detalhada
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Inicializar app quando o DOM carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            new PhotoMagicApp();
+            console.log('🚀 PhotoMagic AI com Gemini Carregado!');
+        });
+
+        // Prevenir comportamento padrão de drag and drop na página
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>        }
 
         h1 {
             font-size: 2.5rem;
@@ -763,3 +1463,4 @@
     </script>
 </body>
 </html>
+
