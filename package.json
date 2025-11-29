@@ -1,7 +1,13 @@
 {
-  "type": "module",
+  "name": "meu-gerador-gemini",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node server.js"
+  },
   "dependencies": {
     "@google/generative-ai": "latest",
-    "formidable": "latest"
+    "formidable": "^3.7.2"
   }
 }
