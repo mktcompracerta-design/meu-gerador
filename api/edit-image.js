@@ -1,89 +1,147 @@
 export default async function handler(req, res) {
+    // Configurar CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Método não permitido' });
     }
 
+    console.log('✅ API edit-image chamada');
+
     try {
+        // Verificar se é FormData
+        const contentType = req.headers['content-type'];
+        if (!contentType || !contentType.includes('multipart/form-data')) {
+            return res.status(400).json({ error: 'Content-Type deve ser multipart/form-data' });
+        }
+
+        // Obter os dados do FormData
         const formData = await req.formData();
         const myPhoto = formData.get('myPhoto');
         const instruction = formData.get('instruction');
 
-        if (!myPhoto || !instruction) {
-            return res.status(400).json({ error: 'Foto e instrução são obrigatórias' });
-        }
-
-        // Converter imagem para base64
-        const imageBuffer = await myPhoto.arrayBuffer();
-        const imageBase64 = Buffer.from(imageBuffer).toString('base64');
-
-        // Chamar Gemini para edição
-        const editedImage = await editImageWithGemini(imageBase64, instruction, myPhoto.type);
-        
-        res.status(200).json({ 
-            image: editedImage,
-            success: true
+        console.log('✅ Dados recebidos:', {
+            temFoto: !!myPhoto,
+            temInstrucao: !!instruction,
+            instrucao: instruction?.substring(0, 50) + '...'
         });
 
+        if (!myPhoto) {
+            return res.status(400).json({ error: 'Foto é obrigatória' });
+        }
+
+        if (!instruction) {
+            return res.status(400).json({ error: 'Instrução é obrigatória' });
+        }
+
+        // Processar com Gemini (versão simulada primeiro)
+        const result = await processWithGemini(myPhoto, instruction);
+        
+        console.log('✅ Retornando resultado para frontend');
+        return res.status(200).json(result);
+
     } catch (error) {
-        console.error('Erro na edição:', error);
-        res.status(500).json({ 
+        console.error('❌ Erro na API:', error);
+        return res.status(500).json({ 
             error: 'Erro interno: ' + error.message 
         });
     }
 }
 
-async function editImageWithGemini(imageBase64, instruction, mimeType) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+async function processWithGemini(photoFile, instruction) {
+    console.log('✅ Processando com Gemini...');
+    
+    try {
+        // Primeiro, vamos testar com uma resposta simulada
+        // Para verificar se o frontend está recebendo corretamente
+        
+        // Converter a imagem original para base64 para retornar (simulação)
+        const arrayBuffer = await photoFile.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
+        
+        // SIMULAÇÃO: Retornar a imagem original como "editada" para teste
+        return {
+            success: true,
+            image: `data:image/jpeg;base64,${base64Image}`,
+            message: "Edição simulada - funcionalidade em desenvolvimento"
+        };
+        
+        /* CÓDIGO REAL DO GEMINI (descomente depois que o teste funcionar)
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error('API_KEY do Gemini não configurada');
+        }
 
-    const contents = [
-        {
-            role: "user",
-            parts: [
+        const imageBuffer = await photoFile.arrayBuffer();
+        const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const requestBody = {
+            contents: [
                 {
-                    text: `Você é um especialista em edição de imagens. Edite a imagem seguindo EXATAMENTE estas instruções:
+                    parts: [
+                        {
+                            text: `EDIÇÃO DE IMAGEM - Siga estas instruções EXATAMENTE:
 
-INSTRUÇÕES: ${instruction}
+INSTRUÇÕES DO USUÁRIO: ${instruction}
 
-REGRAS IMPORTANTES:
-1. Mantenha o rosto da pessoa EXATAMENTE igual
-2. Apenas altere o que foi solicitado nas instruções
-3. Mantenha a qualidade original da imagem
-4. Seja realista e natural
+REGRAS:
+1. Mantenha o rosto da pessoa IDÊNTICO
+2. Aplique apenas as modificações solicitadas
+3. Mantenha a qualidade e realismo
+4. Retorne a imagem editada
 
-Retorne APENAS a imagem editada em base64, sem nenhum texto adicional.`
-                },
-                {
-                    inline_data: {
-                        mime_type: mimeType,
-                        data: imageBase64
-                    }
+Responda APENAS com a imagem editada, sem texto adicional.`
+                        },
+                        {
+                            inline_data: {
+                                mime_type: photoFile.type,
+                                data: imageBase64
+                            }
+                        }
+                    ]
                 }
             ]
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro Gemini:', errorText);
+            throw new Error(`Gemini API error: ${response.status}`);
         }
-    ];
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            contents,
-            generationConfig: {
-                response_mime_type: "image/jpeg"
-            }
-        })
-    });
+        const data = await response.json();
+        console.log('✅ Resposta Gemini recebida');
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Erro no Gemini');
+        // Processar resposta do Gemini
+        // NOTA: O Gemini pode não retornar imagens diretamente na API atual
+        // Esta parte precisa ser adaptada conforme a resposta real
+        
+        return {
+            success: true,
+            image: `data:image/jpeg;base64,${imageBase64}`, // Placeholder
+            message: "Imagem processada com sucesso"
+        };
+        */
+
+    } catch (error) {
+        console.error('❌ Erro no processWithGemini:', error);
+        throw error;
     }
-
-    // O Gemini pode retornar a imagem editada
-    const arrayBuffer = await response.arrayBuffer();
-    const editedBase64 = Buffer.from(arrayBuffer).toString('base64');
-    
-    return `data:image/jpeg;base64,${editedBase64}`;
 }
