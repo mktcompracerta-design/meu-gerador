@@ -63,7 +63,7 @@ export default async function handler(req, res) {
         inputs.push(prompt);
       }
 
-      const result = await model.generateContent(inputs);
+      const result = await model.generateImage(inputs);
       const resposta = result.response;
 
       const imagem =
