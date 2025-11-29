@@ -1,9 +1,7 @@
 {
-  "name": "meu-gerador",
-  "version": "1.0.0",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@google/generative-ai": "latest",
-    "parse-multipart": "latest"
+    "formidable": "latest"
   }
 }
