@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const multipart = require("parse-multipart");
 
 module.exports = async (req, res) => {
   try {
@@ -6,51 +7,43 @@ module.exports = async (req, res) => {
       return res.status(405).json({ error: "Método não permitido" });
     }
 
-    const form = await req.body;
-    const chunks = [];
-
-    req.on("data", (chunk) => chunks.push(chunk));
-    await new Promise((resolve) => req.on("end", resolve));
+    // RECEBER BINARY
+    let chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    await new Promise((r) => req.on("end", r));
 
     const buffer = Buffer.concat(chunks);
     const boundary = req.headers["content-type"].split("boundary=")[1];
+    const parts = multipart.Parse(buffer, boundary);
 
-    const formData = require("parse-multipart").Parse(buffer, boundary);
+    // CAMPOS
+    let prompt = "";
+    let foto = null;
+    let referencia = null;
 
-    let prompt = "Gere uma imagem realista.";
-    let fotoBase64 = null;
-    let referenciaBase64 = null;
-
-    formData.forEach((item) => {
-      if (item.name === "prompt") prompt = item.data.toString();
-      if (item.name === "foto")
-        fotoBase64 = item.data.toString("base64");
-      if (item.name === "referencia")
-        referenciaBase64 = item.data.toString("base64");
+    parts.forEach((p) => {
+      if (p.name === "prompt") prompt = p.data.toString();
+      if (p.name === "foto") foto = p.data.toString("base64");
+      if (p.name === "referencia") referencia = p.data.toString("base64");
     });
 
-    if (!fotoBase64) {
-      return res.status(400).json({ error: "Envie uma foto." });
+    if (!foto) {
+      return res.status(400).json({ error: "Envie uma foto" });
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const autoPrompt = referenciaBase64
-      ? "Recrie a imagem de referência usando a foto da pessoa."
-      : prompt;
+    const imagens = [{ mimeType: "image/jpeg", data: foto }];
+
+    if (referencia) {
+      imagens.push({ mimeType: "image/jpeg", data: referencia });
+    }
 
     const result = await model.generateImage({
-      prompt: autoPrompt,
-      image: referenciaBase64
-        ? [
-            { mimeType: "image/jpeg", data: referenciaBase64 },
-            { mimeType: "image/jpeg", data: fotoBase64 }
-          ]
-        : { mimeType: "image/jpeg", data: fotoBase64 },
-      size: "1024x1024"
+      prompt: prompt || "gere uma imagem",
+      image: imagens,
+      size: "1024x1024",
     });
 
     const base64 = result.images[0].data.replace(/^data:image\/png;base64,/, "");
