@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PhotoMagic AI - Editor de Fotos com Gemini</title>
+    <title>PhotoMagic AI - Editor com Gemini</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -346,6 +346,12 @@
             color: #065f46;
         }
 
+        .api-status.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
         /* Responsividade */
         @media (max-width: 768px) {
             .main-content {
@@ -370,7 +376,7 @@
                 <i class="fas fa-robot"></i>
                 <div>
                     <h1>PhotoMagic AI</h1>
-                    <p class="subtitle">Edite suas fotos com o poder do Google Gemini</p>
+                    <p class="subtitle">Analise suas fotos com o poder do Google Gemini</p>
                 </div>
             </div>
         </header>
@@ -399,25 +405,25 @@
 
                 <div class="instruction-box">
                     <label for="instructionInput">
-                        <i class="fas fa-edit"></i> Instruções de Edição
+                        <i class="fas fa-edit"></i> O que você quer saber sobre a imagem?
                     </label>
-                    <textarea id="instructionInput" placeholder="Descreva exatamente como quer editar sua foto. Ex: 'Troque minha camiseta por um terno azul', 'Coloque um fundo de praia', 'Altere a cor do cabelo para loiro'"></textarea>
+                    <textarea id="instructionInput" placeholder="Ex: 'Descreva esta imagem em detalhes', 'Quais cores predominam?', 'O que esta pessoa está vestindo?', 'Descreva a expressão facial'"></textarea>
                 </div>
 
                 <div class="error-message" id="errorMessage"></div>
                 <div class="success-message" id="successMessage"></div>
 
-                <button class="btn" id="editPhotoBtn" style="margin-top: 20px; width: 100%;">
-                    <i class="fas fa-magic"></i> Editar com Gemini AI
+                <button class="btn" id="analyzeBtn" style="margin-top: 20px; width: 100%;">
+                    <i class="fas fa-search"></i> Analisar com Gemini
                 </button>
 
                 <div class="examples">
-                    <h4><i class="fas fa-lightbulb"></i> Exemplos que funcionam</h4>
+                    <h4><i class="fas fa-lightbulb"></i> Exemplos de análise</h4>
                     <div class="example-list">
-                        <div class="example-item" data-instruction="Descreva esta imagem em detalhes">📝 Descrever Imagem</div>
-                        <div class="example-item" data-instruction="Quais cores predominam nesta foto?">🎨 Analisar Cores</div>
-                        <div class="example-item" data-instruction="O que esta pessoa está vestindo?">👕 Detalhes da Roupa</div>
-                        <div class="example-item" data-instruction="Descreva a expressão facial">😊 Expressão Facial</div>
+                        <div class="example-item" data-instruction="Descreva esta imagem em detalhes, incluindo cores, objetos e pessoas">📝 Descrição Detalhada</div>
+                        <div class="example-item" data-instruction="Analise as cores predominantes e a iluminação da cena">🎨 Análise de Cores</div>
+                        <div class="example-item" data-instruction="Descreva as roupas e aparência das pessoas">👗 Roupas e Estilo</div>
+                        <div class="example-item" data-instruction="Analise a expressão facial e emoções">😊 Expressões Faciais</div>
                     </div>
                 </div>
             </div>
@@ -425,7 +431,7 @@
             <div class="preview-section">
                 <div class="section-title">
                     <i class="fas fa-eye"></i>
-                    <h2>Resultado do Gemini</h2>
+                    <h2>Resultado da Análise</h2>
                 </div>
 
                 <div class="image-preview" id="imagePreview">
@@ -448,7 +454,7 @@
                     <button class="btn" id="copyBtn">
                         <i class="fas fa-copy"></i> Copiar Texto
                     </button>
-                    <button class="btn btn-secondary" id="newEditBtn">
+                    <button class="btn btn-secondary" id="newAnalysisBtn">
                         <i class="fas fa-redo"></i> Nova Análise
                     </button>
                 </div>
@@ -468,12 +474,12 @@
                 this.uploadArea = document.getElementById('uploadArea');
                 this.fileName = document.getElementById('fileName');
                 this.instructionInput = document.getElementById('instructionInput');
-                this.editPhotoBtn = document.getElementById('editPhotoBtn');
+                this.analyzeBtn = document.getElementById('analyzeBtn');
                 this.imagePreview = document.getElementById('imagePreview');
                 this.loading = document.getElementById('loading');
                 this.resultActions = document.getElementById('resultActions');
                 this.copyBtn = document.getElementById('copyBtn');
-                this.newEditBtn = document.getElementById('newEditBtn');
+                this.newAnalysisBtn = document.getElementById('newAnalysisBtn');
                 this.errorMessage = document.getElementById('errorMessage');
                 this.successMessage = document.getElementById('successMessage');
                 this.apiStatus = document.getElementById('apiStatus');
@@ -490,9 +496,9 @@
                 this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
                 this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
                 this.photoInput.addEventListener('change', (e) => this.handleFileSelect(e));
-                this.editPhotoBtn.addEventListener('click', () => this.editPhoto());
+                this.analyzeBtn.addEventListener('click', () => this.analyzeImage());
                 this.copyBtn.addEventListener('click', () => this.copyText());
-                this.newEditBtn.addEventListener('click', () => this.resetEditor());
+                this.newAnalysisBtn.addEventListener('click', () => this.resetEditor());
                 
                 // Exemplos de uso
                 document.querySelectorAll('.example-item').forEach(item => {
@@ -505,23 +511,24 @@
                 // Verificar status da API
                 this.checkAPIStatus();
                 
-                console.log('✅ PhotoMagic App inicializado - Modo Gemini Real');
+                console.log('✅ PhotoMagic App inicializado');
             }
 
             async checkAPIStatus() {
                 try {
-                    const response = await fetch('/api/check-status');
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        this.apiStatus.innerHTML = '<i class="fas fa-check-circle"></i> API Gemini conectada e funcionando!';
-                        this.apiStatus.classList.add('connected');
+                    // Tentar acessar a API de status
+                    const response = await fetch('/api/status');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.apiStatus.innerHTML = '<i class="fas fa-check-circle"></i> ' + (data.message || 'API conectada!');
+                        this.apiStatus.className = 'api-status connected';
                     } else {
-                        this.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API em modo de teste';
+                        throw new Error('API não respondeu');
                     }
                 } catch (error) {
-                    this.apiStatus.innerHTML = '<i class="fas fa-times-circle"></i> Erro ao conectar com a API';
-                    console.error('❌ Erro ao verificar API:', error);
+                    console.log('⚠️ API não disponível, usando modo local');
+                    this.apiStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Modo Local: API não configurada';
+                    this.apiStatus.className = 'api-status error';
                 }
             }
 
@@ -553,7 +560,6 @@
                     return;
                 }
 
-                // Verificar tamanho do arquivo (máximo 10MB)
                 if (file.size > 10 * 1024 * 1024) {
                     this.showError('A imagem deve ter menos de 10MB.');
                     return;
@@ -580,7 +586,7 @@
                 reader.readAsDataURL(file);
             }
 
-            async editPhoto() {
+            async analyzeImage() {
                 if (!this.currentFile) {
                     this.showError('Por favor, selecione uma foto primeiro.');
                     return;
@@ -588,7 +594,7 @@
 
                 const instruction = this.instructionInput.value.trim();
                 if (!instruction) {
-                    this.showError('Por favor, digite as instruções de análise.');
+                    this.showError('Por favor, digite o que você quer saber sobre a imagem.');
                     return;
                 }
 
@@ -597,88 +603,184 @@
                 this.hideSuccess();
 
                 try {
-                    console.log('🚀 Enviando para API Gemini...');
+                    console.log('🚀 Enviando para análise...');
                     
                     const formData = new FormData();
                     formData.append('image', this.currentFile);
-                    formData.append('instruction', instruction);
+                    formData.append('prompt', instruction);
 
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos
-
-                    const response = await fetch('/api/analyze-image', {
+                    // Usar a API real
+                    const response = await fetch('/api/analyze', {
                         method: 'POST',
-                        body: formData,
-                        signal: controller.signal
+                        body: formData
                     });
-
-                    clearTimeout(timeoutId);
 
                     console.log('📨 Resposta da API:', response.status);
 
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('❌ Erro na resposta:', errorText);
+                        // Se a API não estiver disponível, usar simulação
+                        if (response.status === 404) {
+                            return await this.useLocalAnalysis(instruction);
+                        }
                         throw new Error(`Erro ${response.status}: ${response.statusText}`);
                     }
 
                     const result = await response.json();
                     
                     if (!result.success) {
-                        throw new Error(result.error || 'Erro desconhecido na API');
+                        throw new Error(result.error || 'Erro na análise');
                     }
 
-                    // Exibir resultado do Gemini
-                    this.displayGeminiResult(result);
+                    // Exibir resultado
+                    this.displayAnalysisResult(result, instruction);
                     
                 } catch (error) {
-                    console.error('❌ Erro detalhado:', error);
-                    
-                    if (error.name === 'AbortError') {
-                        this.showError('A requisição demorou muito tempo. Tente com uma imagem menor.');
-                    } else {
-                        this.showError('Erro ao processar imagem: ' + error.message);
-                    }
+                    console.error('❌ Erro:', error);
+                    // Em caso de erro, usar análise local
+                    await this.useLocalAnalysis(instruction);
                 } finally {
                     this.setLoading(false);
                 }
             }
 
-            displayGeminiResult(result) {
-                console.log('✅ Resultado do Gemini:', result);
-                this.geminiResult = result.text;
+            async useLocalAnalysis(instruction) {
+                console.log('🎭 Usando análise local...');
+                
+                // Simular processamento
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Gerar análise simulada baseada na instrução
+                const simulatedResult = this.generateSimulatedAnalysis(instruction);
+                
+                this.displayAnalysisResult({
+                    success: true,
+                    analysis: simulatedResult,
+                    isSimulated: true
+                }, instruction);
+            }
 
+            generateSimulatedAnalysis(instruction) {
+                const analyses = {
+                    'descri': `**Análise da Imagem:**
+                    
+📸 **Descrição Geral:** Esta imagem apresenta uma composição visualmente equilibrada com elementos bem distribuídos no quadro.
+
+🎨 **Paleta de Cores:** Predominam tons naturais e terrosos, com destaque para azuis suaves e verdes amenos que criam uma atmosfera harmoniosa.
+
+👥 **Elementos Principais:** A cena captura momentos espontâneos com boa iluminação natural, destacando texturas e profundidade.
+
+💡 **Observações Técnicas:** A imagem demonstra boa profundidade de campo e enquadramento competente, com foco adequado nos elementos centrais.
+
+*Esta é uma análise simulada. Com o Gemini AI, você receberia uma análise real e detalhada da sua imagem.*`,
+
+                    'cores': `**Análise de Cores e Iluminação:**
+                    
+🌈 **Paleta Dominante:** A imagem apresenta uma harmoniosa combinação de cores, com predominância de tons quentes e naturais.
+
+⚡ **Contraste e Saturação:** Boa variação tonal entre áreas claras e escuras, criando profundidade e interesse visual.
+
+🌟 **Iluminação:** Luz natural bem distribuída, com sombras suaves que definem as formas sem criar áreas muito escuras.
+
+🎯 **Pontos Focais:** As cores mais vibrantes estão estrategicamente posicionadas para guiar o olhar do observador.
+
+*Análise simulada - O Gemini AI forneceria uma análise precisa das cores reais da sua imagem.*`,
+
+                    'roupas': `**Análise de Vestuário e Estilo:**
+                    
+👔 **Estilo Geral:** As roupas apresentam um equilíbrio entre conforto e estilo, com peças que se complementam harmonicamente.
+
+🎨 **Combinação de Cores:** Paleta coerente com bom contraste entre as peças, criando um visual put together.
+
+📐 **Silhueta e Caimento:** As roupas seguem linhas contemporâneas com caimento adequado ao corpo.
+
+💫 **Detalhes e Acessórios:** Elementos complementares que acrescentam personalidade ao visual sem sobrecarregar.
+
+*Análise simulada - Com Gemini AI, você teria uma descrição precisa das roupas na imagem.*`,
+
+                    'expressão': `**Análise de Expressões Faciais:**
+                    
+😊 **Expressão Predominante:** A fisionomia transmite naturalidade e autenticidade, com features relaxadas.
+
+👀 **Comunicação Não-Verbal:** Postura facial que sugere conforto e espontaneidade no momento capturado.
+
+💞 **Emoções Transmitidas:** Harmonia entre os elementos faciais que criam uma impressão positiva e acolhedora.
+
+🎭 **Características Únicas:** Traços distintivos que conferem personalidade e caráter à expressão.
+
+*Análise simulada - O Gemini AI analisaria com precisão as emoções e expressões faciais.*`
+                };
+
+                // Encontrar a análise mais apropriada
+                const instructionLower = instruction.toLowerCase();
+                for (const [key, analysis] of Object.entries(analyses)) {
+                    if (instructionLower.includes(key)) {
+                        return analysis;
+                    }
+                }
+
+                // Análise padrão
+                return `**Análise da Imagem:**
+
+📸 **Baseado na sua solicitação:** "${instruction}"
+
+A imagem apresenta características visuais interessantes que merecem destaque. A composição demonstra cuidado com o enquadramento e a luz parece ser bem aproveitada.
+
+🎯 **Para uma análise mais precisa:** Especifique se quer detalhes sobre cores, pessoas, objetos, cenário ou aspectos técnicos.
+
+*Esta é uma análise simulada. Com a API do Gemini configurada, você receberia uma análise real e detalhada da sua imagem.*`;
+            }
+
+            displayAnalysisResult(result, instruction) {
+                console.log('✅ Exibindo resultado');
+                this.geminiResult = result.analysis;
+
+                const isSimulated = result.isSimulated;
+                
                 this.imagePreview.innerHTML = `
                     <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
-                        <div style="background: var(--light); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                            <h4 style="color: var(--primary); margin-bottom: 10px;">
-                                <i class="fas fa-robot"></i> Resposta do Gemini
+                        <div style="background: ${isSimulated ? '#fff7ed' : var(--light)}; 
+                                    padding: 20px; border-radius: 10px; margin-bottom: 15px;
+                                    border-left: 4px solid ${isSimulated ? '#f59e0b' : var(--primary)};">
+                            <h4 style="color: ${isSimulated ? '#f59e0b' : var(--primary)}; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas ${isSimulated ? 'fa-exclamation-triangle' : 'fa-robot'}"></i>
+                                ${isSimulated ? 'Análise Simulada' : 'Resposta do Gemini'}
                             </h4>
-                            <p style="color: var(--dark); line-height: 1.6; white-space: pre-wrap;">${result.text}</p>
+                            <div style="color: var(--dark); line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;">
+                                ${result.analysis}
+                            </div>
                         </div>
                         <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; border-left: 4px solid var(--primary);">
                             <p style="color: #0369a1; font-size: 0.9rem; margin: 0;">
-                                <strong>Instrução enviada:</strong> "${this.instructionInput.value}"
+                                <strong>Sua pergunta:</strong> "${instruction}"
                             </p>
                         </div>
+                        ${isSimulated ? `
+                        <div style="background: #fffbeb; padding: 12px; border-radius: 8px; margin-top: 10px; border: 1px dashed #f59e0b;">
+                            <p style="color: #d97706; font-size: 0.8rem; margin: 0; text-align: center;">
+                                <i class="fas fa-info-circle"></i> Para usar o Gemini AI real, configure a GEMINI_API_KEY na Vercel
+                            </p>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
 
                 this.showResult();
-                this.showSuccess('Análise concluída com sucesso pelo Gemini!');
+                this.showSuccess(isSimulated ? 
+                    'Análise simulada concluída! Configure a API para análise real.' : 
+                    'Análise concluída com sucesso pelo Gemini!');
             }
 
             setLoading(loading) {
                 if (loading) {
                     this.loading.style.display = 'block';
                     this.imagePreview.style.display = 'none';
-                    this.editPhotoBtn.disabled = true;
-                    this.editPhotoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+                    this.analyzeBtn.disabled = true;
+                    this.analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analisando...';
                 } else {
                     this.loading.style.display = 'none';
                     this.imagePreview.style.display = 'flex';
-                    this.editPhotoBtn.disabled = false;
-                    this.editPhotoBtn.innerHTML = '<i class="fas fa-magic"></i> Editar com Gemini AI';
+                    this.analyzeBtn.disabled = false;
+                    this.analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Analisar com Gemini';
                 }
             }
 
@@ -735,9 +837,6 @@
                         <div class="placeholder-text">
                             <i class="fas fa-image"></i>
                             <p>O resultado da análise aparecerá aqui</p>
-                            <p style="font-size: 0.8rem; margin-top: 10px; color: #9ca3af;">
-                                O Gemini analisará sua imagem e retornará uma descrição detalhada
-                            </p>
                         </div>
                     `;
                 }
@@ -747,17 +846,11 @@
         // Inicializar app quando o DOM carregar
         document.addEventListener('DOMContentLoaded', () => {
             new PhotoMagicApp();
-            console.log('🚀 PhotoMagic AI com Gemini Carregado!');
+            console.log('🚀 PhotoMagic AI Carregado!');
         });
 
-        // Prevenir comportamento padrão de drag and drop na página
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-        });
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
     </script>
 </body>
 </html>
