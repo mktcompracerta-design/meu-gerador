@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "@google/generative-ai": "latest",
-    "formidable": "^3.7.2"
+    "formidable": "3.5.1"
   }
 }
